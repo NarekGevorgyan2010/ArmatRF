@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="hy">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArmathRF</title>
+    <style>
+        html {
+            scroll-behavior: smooth;
+        }
+        .navbar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: linear-gradient(45deg, #4caf50, #81c784);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+        .nav-logo {
+            color: white;
+            font-size: 1.5em;
+            font-weight: bold;
+            text-decoration: none;
+        }
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        .nav-menu li {
+            margin: 0 15px;
+        }
+        .nav-menu a {
+            color: white;
+            text-decoration: none;
+            padding: 15px 10px;
+            display: block;
+            transition: background-color 0.3s ease;
+            border-radius: 5px;
+        }
+        .nav-menu a:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        .language-selector {
+            display: flex;
+            align-items: center;
+        }
+        .language-selector select {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            padding: 5px 10px;
+            font-size: 14px;
+        }
+        .language-selector select option {
+            background: #4caf50;
+            color: white;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 80px 0 20px 0;
+            background: radial-gradient(circle, #66bb6a, #a5d6a7);
+            min-height: 100vh;
+            color: #333;
+            width: 100%;
+        }
+        .header {
+            text-align: center;
+            background: linear-gradient(45deg, #4caf50, #81c784);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            animation: slideInDown 1s ease-out;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .title-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .header h1 {
+            font-size: 2.5em;
+            margin: 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .header p {
+            font-size: 1.2em;
+            margin: 10px 0 0 0;
+        }
+        .section {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            backdrop-filter: blur(10px);
+            animation: fadeInUp 1s ease-out both;
+        }
+        .section h2 {
+            color: #4caf50;
+            border-bottom: 3px solid #81c784;
+            padding-bottom: 10px;
+            text-align: center;
+        }
+        .section ul {
+            margin: 15px 0;
+            padding-left: 20px;
+        }
+        .section li {
+            margin: 8px 0;
+            color: #555;
+        }
+        .functions .function-item {
+            background: #f9f9f9;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        .functions .function-item:hover {
+            background: #e8f5e8;
+            transform: translateY(-5px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .gallery-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .gallery-item {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        .gallery-item:hover {
+            background: #e8f5e8;
+            transform: translateY(-5px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .gallery-item img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        .contact {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            backdrop-filter: blur(10px);
+            animation: fadeInUp 1s ease-out 0.8s both;
+        }
+        .contact h2 {
+            color: #4caf50;
+            margin-bottom: 20px;
+        }
+        .contact-cards {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .contact-card {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            min-width: 250px;
+            text-align: center;
+            animation: fadeInUp 1s ease-out both;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .contact-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+        .contact-card:nth-child(1) {
+            animation-delay: 0.9s;
+        }
+        .contact-card:nth-child(2) {
+            animation-delay: 1.1s;
+        }
+        .contact-card:nth-child(3) {
+            animation-delay: 1.3s;
+        }
+        .contact-card p {
+            margin: 5px 0;
+            font-size: 1em;
+        }
+
+        @keyframes slideInDown {
+            from {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                transform: translateY(30px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .header h1 {
+                font-size: 2em;
+            }
+            .nav-container {
+                flex-direction: column;
+                padding: 10px 20px;
+            }
+            .nav-menu {
+                margin-top: 10px;
+            }
+            .nav-menu li {
+                margin: 0 10px;
+            }
+            .nav-menu a {
+                padding: 10px 5px;
+            }
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #666;
+            font-size: 14px;
+            margin-top: 40px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div class="nav-container">
+             <img src="images.png" alt="Armath Logo" style="height: 70px; margin-left: 10px; border-radius: 8px;">
+            <div class="nav-logo">ArmathRF</div>
+            <ul class="nav-menu">
+                <li><a href="#home" data-key="nav-home">Գլխավոր</a></li>
+                <li><a href="#about-us" data-key="nav-about-us">Մեր մասին</a></li>
+                <li><a href="#about-device" data-key="nav-about-device">Սարքի մասին</a></li>
+                <li><a href="#functions" data-key="nav-functions">Ֆունկցիաներ</a></li>
+                <li><a href="#gallery" data-key="nav-gallery">Նկարներ</a></li>
+                <li><a href="#contact" data-key="nav-contact">Կապ</a></li>
+            </ul>
+            <div class="language-selector">
+                <select id="language-select">
+                    <option value="hy">Հայ</option>
+                    <option value="en">EN</option>
+                    <option value="ru">РУ</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+    <div class="header" id="home">
+        <div class="title-container">
+            <img src="download-removebg-preview.png" alt="ArmathRF Logo" style="height: 70px; margin-left: 10px; border-radius: 8px;">
+            
+            <h1 data-key="title">ArmathRF IoT Սարք</h1>
+           
+        </div>
+        <p data-key="subtitle">Նորարարական IoT լուծումներ</p>
+    </div>
+
+    <div class="section" id="about-us">
+        <h2 data-key="about-us-title">Մեր մասին</h2>
+        <p data-key="about-us-p1">Մենք Միսաք Մեծարենցի անվան թիվ 146 դպրոցի Armath լաբորատորիայի սաներն ենք։ Armath լաբորատորիայում մենք ուսումնասիրում ենք ռոբոտաշինություն և կիբերանվտանգություն, որոնք մեր ժամանակներում ունեն մեծ կարևորություն և գործնական նշանակություն։ Լաբորատորիայի շրջանակներում մենք ստեղծել ենք ArmathRF սարքը։ Այն նախատեսված է տարբեր սարքերի և համակարգերի անվտանգության մակարդակի գնահատման ու խոցելիությունների ուսումնասիրման համար՝ կրթական և հետազոտական նպատակներով</p>
+        
+    </div>
+
+    <div class="section" id="about-device">
+        <h2 data-key="about-device-title">Սարքի մասին</h2>
+        <p data-key="about-device-p1">ArmathRF սարքը կառուցված է ESP32 միկրոկոնտրոլերի հիման վրա, որն ապահովում է բարձր կատարողականություն և WiFi/Bluetooth կապ:</p>
+        <p data-key="about-device-p2">Մեր սարքը ունի բարձրորակ TFT էկրան, հզոր պրոցեսոր և օգտագործողի համար հարմար ինտերֆեյս:</p>
+        <ul data-key="about-device-list">
+            <li data-key="about-device-item1">Arduino IDE համատեղելի</li>
+            <li data-key="about-device-item2">ESP-IDF ծրագրավորման միջավայր</li>
+            <li data-key="about-device-item3">MicroPython և CircuitPython աջակցություն</li>
+            <li data-key="about-device-item4">WiFi 802.11 b/g/n ստանդարտներ</li>
+            <li data-key="about-device-item5">IR հաղորդակցություն (NEC, Sony, RC5, RC6 պրոտոկոլներ)</li>
+            <li data-key="about-device-item6">2.4GHz հաճախականություններ</li>
+        </ul>
+        <p data-key="about-device-p3">Սարքը աջակցում է OTA (Over-The-Air) թարմացումներ և ունի ընդարձակ համայնքային աջակցություն ESP32 էկոհամակարգում:</p>
+    </div>
+
+    <div class="section functions" id="functions">
+        <h2 data-key="functions-title">Ֆունկցիաներ</h2>
+        <div class="function-item">
+            <h3 data-key="wifi-scan">WiFi սկանավորում</h3>
+            <p data-key="wifi-scan-desc">Սարքը կարող է սկանավորել առկա WiFi ցանցերը և ցուցադրել դրանց մասին տեղեկություններ:</p>
+        </div>
+        <div class="function-item">
+            <h3 data-key="wifi-deauth">WiFi Deauthentication</h3>
+            <p data-key="wifi-deauth-desc">Թույլ է տալիս անջատել սարքերը WiFi ցանցից:</p>
+        </div>
+        <div class="function-item">
+            <h3 data-key="wifi-evil-twin">Evil Twin հարձակում</h3>
+            <p data-key="wifi-evil-twin-desc">Ստեղծում է կեղծ WiFi ցանցեր անվտանգության թեստավորման համար:</p>
+        </div>
+        <div class="function-item">
+            <h3 data-key="ir-read">IR կոդերի ընթերցում</h3>
+            <p data-key="ir-read-desc">Ընթերցում է ինֆրակարմիր ազդանշաններ և կոդեր:</p>
+        </div>
+        <div class="function-item">
+            <h3 data-key="ir-write">IR կոդերի գրավորում</h3>
+            <p data-key="ir-write-desc">Թույլ է տալիս գրավորել և ուղարկել IR կոդեր:</p>
+        </div>
+        <div class="function-item">
+            <h3 data-key="ir-jamming">IR խանգարում</h3>
+            <p data-key="ir-jamming-desc">Խանգարում է ինֆրակարմիր ազդանշաններին:</p>
+        </div>
+    </div>
+
+    <div class="section gallery" id="gallery">
+        <h2 data-key="gallery-title">Նկարներ</h2>
+        <div class="gallery-container">
+            <div class="gallery-item">
+                <img src="b.png" alt="ArmathRF Սարք" data-key="device-image-alt">
+               
+                 
+            </div>
+            <div class="gallery-item">
+                <img src="a.jpg" alt="Մենյու 1" data-key="menu1-image-alt">
+               
+            </div>
+           
+            
+        </div>
+    </div>
+
+    <div class="contact" id="contact">
+        <h2 data-key="contact-title">Կապ մեզ հետ</h2>
+        <div class="contact-cards">
+            <div class="contact-card">
+                <p data-key="contact-name">Անուն: Նարեկ Գևորգյան</p>
+                <p data-key="contact-phone">Հեռախոս: 055444139</p>
+            </div>
+            <div class="contact-card">
+                <p data-key="contact-name2">Անուն: Մարիա Վարդանյան</p>
+                <p data-key="contact-phone2">Հեռախոս: 098000978</p>
+            </div>
+            <div class="contact-card">
+                 <a href="https://www.facebook.com/profile.php?id=100086997153579" target="_blank">Միսաք Մեծարենց Armath</a>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p data-key="footer-text">© 2026 ArmathRF. Բոլոր իրավունքները պաշտպանված են.</p>
+    </footer>
+    </div>
+
+    <script>
+        const translations = {
+            hy: {
+                "nav-home": "Գլխավոր",
+                "nav-about-us": "Մեր մասին",
+                "nav-about-device": "Սարքի մասին",
+                "nav-functions": "Ֆունկցիաներ",
+                "nav-gallery": "Նկարներ",
+                "nav-contact": "Կապ",
+                "title": "ArmathRF IoT Սարք",
+                "subtitle": "Նորարարական IoT լուծումներ",
+                "about-us-title": "Մեր մասին",
+                "about-us-p1": "Մենք Միսաք Մեծարենցի անվան թիվ 146 դպրոցի Armath լաբորատորիայի սաներն ենք։ Armath լաբորատորիայում մենք ուսումնասիրում ենք ռոբոտաշինություն և կիբերանվտանգություն, որոնք մեր ժամանակներում ունեն մեծ կարևորություն և գործնական նշանակություն։ Լաբորատորիայի շրջանակներում մենք ստեղծել ենք ArmathRF սարքը։ Այն նախատեսված է տարբեր սարքերի և համակարգերի անվտանգության մակարդակի գնահատման ու խոցելիությունների ուսումնասիրման համար՝ կրթական և հետազոտական նպատակներով",
+                "about-device-title": "Սարքի մասին",
+                "about-device-p1": "ArmathRF սարքը կառուցված է ESP32 միկրոկոնտրոլերի հիման վրա, որն ապահովում է բարձր կատարողականություն և WiFi/Bluetooth կապ:",
+                "about-device-p2": "Մեր սարքը ունի բարձրորակ TFT էկրան, հզոր պրոցեսոր և օգտագործողի համար հարմար ինտերֆեյս:",
+                "about-device-list": "",
+                "about-device-item1": "Arduino IDE համատեղելի",
+                "about-device-item2": "ESP-IDF ծրագրավորման միջավայր",
+                "about-device-item3": "MicroPython և CircuitPython աջակցություն",
+                "about-device-item4": "WiFi 802.11 b/g/n ստանդարտներ",
+                "about-device-item5": "IR հաղորդակցություն (NEC, Sony, RC5, RC6 պրոտոկոլներ)",
+                "about-device-item6": "2.4GHz հաճախականություններ",
+                "about-device-p3": "Սարքը աջակցում է OTA (Over-The-Air) թարմացումներ և ունի ընդարձակ համայնքային աջակցություն ESP32 էկոհամակարգում:",
+                "functions-title": "Ֆունկցիաներ",
+                "wifi-scan": "WiFi սկանավորում",
+                "wifi-scan-desc": "Սարքը կարող է սկանավորել առկա WiFi ցանցերը և ցուցադրել դրանց մասին տեղեկություններ:",
+                "wifi-deauth": "WiFi Deauthentication",
+                "wifi-deauth-desc": "Թույլ է տալիս անջատել սարքերը WiFi ցանցից:",
+                "wifi-evil-twin": "Evil Twin հարձակում",
+                "wifi-evil-twin-desc": "Ստեղծում է կեղծ WiFi ցանցեր անվտանգության թեստավորման համար:",
+                "ir-read": "IR կոդերի ընթերցում",
+                "ir-read-desc": "Ընթերցում է ինֆրակարմիր ազդանշաններ և կոդեր:",
+                "ir-write": "IR կոդերի գրավորում",
+                "ir-write-desc": "Թույլ է տալիս գրավորել և ուղարկել IR կոդեր:",
+                "ir-jamming": "IR խանգարում",
+                "ir-jamming-desc": "Խանգարում է ինֆրակարմիր ազդանշաններին:",
+                "gallery-title": "Նկարներ",
+                "device-image-alt": "ArmathRF Սարք",
+                "menu1-image-alt": "Մենյու 1",
+                "contact-title": "Կապ մեզ հետ",
+                "contact-name": " Նարեկ Գևորգյան",
+                "contact-phone": " 055444139",
+                "contact-name2": " Մարիա Վարդանյան",
+                "contact-phone2": " 098000978",
+                "footer-text": "© 2026 ArmathRF. Բոլոր իրավունքները պաշտպանված են."
+            },
+            en: {
+                "nav-home": "Home",
+                "nav-about-us": "About Us",
+                "nav-about-device": "About Device",
+                "nav-functions": "Functions",
+                "nav-gallery": "Images",
+                "nav-contact": "Contact",
+                "title": "ArmathRF IoT Device",
+                "subtitle": "Innovative IoT Solutions",
+                "about-us-title": "About Us",
+                "about-us-p1": "We are the students of the Armath laboratory at Misaq Metsarents No. 146 school. In the Armath laboratory, we study robotics and cybersecurity, which have great importance and practical significance in our times. Within the laboratory, we have created the ArmathRF device. It is intended for assessing the security level of various devices and systems and studying vulnerabilities for educational and research purposes.",
+                "about-device-title": "About Device",
+                "about-device-p1": "ArmathRF device is built on the basis of ESP32 microcontroller, which provides high performance and WiFi/Bluetooth connection:",
+                "about-device-p2": "Our device has a high-quality TFT screen, powerful processor and user-friendly interface:",
+                "about-device-list": "",
+                "about-device-item1": "Arduino IDE compatible",
+                "about-device-item2": "ESP-IDF development environment",
+                "about-device-item3": "MicroPython and CircuitPython support",
+                "about-device-item4": "WiFi 802.11 b/g/n standards",
+                "about-device-item5": "IR communication (NEC, Sony, RC5, RC6 protocols)",
+                "about-device-item6": "2.4GHz frequencies",
+                "about-device-p3": "The device supports OTA (Over-The-Air) updates and has extensive community support in the ESP32 ecosystem:",
+                "functions-title": "Functions",
+                "wifi-scan": "WiFi Scanning",
+                "wifi-scan-desc": "The device can scan available WiFi networks and display information about them.",
+                "wifi-deauth": "WiFi Deauthentication",
+                "wifi-deauth-desc": "Allows disconnecting devices from WiFi networks.",
+                "wifi-evil-twin": "Evil Twin Attack",
+                "wifi-evil-twin-desc": "Creates fake WiFi networks for security testing.",
+                "ir-read": "IR Code Reading",
+                "ir-read-desc": "Reads infrared signals and codes.",
+                "ir-write": "IR Code Writing",
+                "ir-write-desc": "Allows writing and sending IR codes.",
+                "ir-jamming": "IR Jamming",
+                "ir-jamming-desc": "Jams infrared signals.",
+                "gallery-title": "Images",
+                "device-image-alt": "armathRF Device",
+                "menu1-image-alt": "Menu 1",
+                "contact-title": "Contact Us",
+                "contact-name": " Narek Gevorgyan",
+                "contact-phone": " 055444139",
+                "contact-name2": " Maria Vardanyan",
+                "contact-phone2": " 098000978",
+                "footer-text": "© 2026 ArmathRF. All rights reserved."
+            },
+            ru: {
+                "nav-home": "Главная",
+                "nav-about-us": "О нас",
+                "nav-about-device": "О устройстве",
+                "nav-functions": "Функции",
+                "nav-gallery": "Изображения",
+                "nav-contact": "Контакты",
+                "title": "ArmathRF IoT Устройство",
+                "subtitle": "Инновационные IoT решения",
+                "about-us-title": "О нас",
+                "about-us-p1": "Мы ученики лаборатории Armath школы имени Мисака Мецаренца №146. В лаборатории Armath мы изучаем робототехнику и кибербезопасность, которые имеют большое значение и практическую значимость в наше время. В рамках лаборатории мы создали устройство ArmathRF. Оно предназначено для оценки уровня безопасности различных устройств и систем и изучения уязвимостей в образовательных и исследовательских целях.",
+                "about-device-title": "О устройстве",
+                "about-device-p1": "Устройство ArmathRF построено на базе микроконтроллера ESP32, который обеспечивает высокую производительность и подключение WiFi/Bluetooth:",
+                "about-device-p2": "Наше устройство оснащено высококачественным TFT экраном, мощным процессором и удобным интерфейсом:",
+                "about-device-list": "",
+                "about-device-item1": "Совместимо с Arduino IDE",
+                "about-device-item2": "Среда разработки ESP-IDF",
+                "about-device-item3": "Поддержка MicroPython и CircuitPython",
+                "about-device-item4": "Стандарты WiFi 802.11 b/g/n",
+                "about-device-item5": "IR связь (протоколы NEC, Sony, RC5, RC6)",
+                "about-device-item6": "Частоты 2.4GHz",
+                "about-device-p3": "Устройство поддерживает OTA (Over-The-Air) обновления и имеет обширную поддержку сообщества в экосистеме ESP32.",
+                "functions-title": "Функции",
+                "wifi-scan": "WiFi сканирование",
+                "wifi-scan-desc": "Устройство может сканировать доступные WiFi сети и отображать информацию о них.",
+                "wifi-deauth": "WiFi деаутентификация",
+                "wifi-deauth-desc": "Позволяет отключать устройства от WiFi сетей.",
+                "wifi-evil-twin": "Evil Twin атака",
+                "wifi-evil-twin-desc": "Создает фальшивые WiFi сети для тестирования безопасности.",
+                "ir-read": "Чтение IR кодов",
+                "ir-read-desc": "Читает инфракрасные сигналы и коды.",
+                "ir-write": "Запись IR кодов",
+                "ir-write-desc": "Позволяет записывать и отправлять IR коды.",
+                "ir-jamming": "IR глушение",
+                "ir-jamming-desc": "Глушит инфракрасные сигналы.",
+                "gallery-title": "Изображения",
+                "device-image-alt": "armathRF Устройство",
+                "menu1-image-alt": "Меню 1",
+                "contact-title": "Свяжитесь с нами",
+                "contact-name": " Нарек Геворгян",
+                "contact-phone": " 055444139",
+                "contact-name2": " Мария Вардян",
+                "contact-phone2": " 098000978",
+                "footer-text": "© 2026 ArmathRF. Все права защищены."
+            }
+        };
+
+        function changeLanguage(lang) {
+            document.querySelectorAll('[data-key]').forEach(element => {
+                const key = element.getAttribute('data-key');
+                if (translations[lang] && translations[lang][key]) {
+                    if (element.tagName === 'IMG') {
+                        element.alt = translations[lang][key];
+                    } else {
+                        element.textContent = translations[lang][key];
+                    }
+                }
+            });
+
+            localStorage.setItem('selectedLanguage', lang);
+        }
+
+        document.getElementById('language-select').addEventListener('change', function() {
+            changeLanguage(this.value);
+        });
+
+        // Load saved language on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedLang = localStorage.getItem('selectedLanguage') || 'hy';
+            document.getElementById('language-select').value = savedLang;
+            changeLanguage(savedLang);
+        });
+    </script>
+</body>
+</html>
